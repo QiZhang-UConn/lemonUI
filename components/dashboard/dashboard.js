@@ -192,8 +192,10 @@ function DashboardComponent() {
     }
 
     function newInvitePop(){
-        popupNewInvite=document.getElementById("invite-users");
-        popupNewInvite.style.display='block';
+        if(selectedPlaylist){
+            popupNewInvite=document.getElementById("invite-users");
+            popupNewInvite.style.display='block';
+        }
     }
     function editHide(){
         popupEdit=document.getElementById("edit-playlist");
