@@ -504,12 +504,13 @@ function DashboardComponent() {
         let editName=editNameField.value;
         let editDescriptionFeild=document.getElementById("edit-playlist-description");
         let editDescription=editDescriptionFeild.value;
-        console.log(selectedPlaylist);
-        console.log(selectedPlaylist.access);
+        let newAccessField = document.querySelector('input[type=checkbox]');
+        let newAccess="PRIVATE";
+        if(newAccessField.checked) newAccess="PUBLIC";
         let newInfo={
             name: editName,
             description: editDescription,
-            access:selectedPlaylist.access
+            access:newAccess
         }
         try {
             let resp = await fetch(`http://localhost:5000/lemon/playlists/${selectedPlaylist.id}/editplaylist`, {
@@ -523,6 +524,7 @@ function DashboardComponent() {
             if (resp.status === 200) {
                 console.log("Edit Done");
                 loadPrivate();
+                loadPublic();
                 let songsContainer=document.getElementById('PlaylistTable').getElementsByTagName('tbody')[0];
                 songsContainer.innerHTML=null;
                 //clear playlist name and id displayed above the table
