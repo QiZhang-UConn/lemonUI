@@ -308,6 +308,10 @@ function DashboardComponent() {
           
     }
 
+
+    // Variable that persists to track if function is running to prevent duplicates
+    var currRunning;
+    
     async function addDelete(){
         // Deletion logic
         // When a user clicks the delete button...
@@ -411,15 +415,69 @@ function DashboardComponent() {
                     whoList.forEach((e)=>{
                         output.push(`
                         <li><a href="#" class="dropdown-item" >
-                            ${e.username}#${e.discriminator}${e.userRole}
+                            ${e.username}#${e.discriminator}#${e.userRole}
+                            <button class='btn btn-default'>
+                                <ion-icon name="close-outline"></ion-icon>
+                            </button>
                         </a></li>
                         `)})
                     whoDrop.innerHTML=output.join('');
+                    deleteRole();
                 }
             } catch (e) {
                 console.error(e);
                 updateErrorMessage('Connection error!');
             }
+        }
+    }
+
+    async function deleteRole(){
+        $("#access-table").on("click", "button", async function(e) {
+            if (!currRunning) {
+                currRunning = true;
+                // Find the cell of selected user
+                var user = e.currentTarget.closest('a');
+                //Get Username and Discriminator of the selected user
+                var userInfo=user.innerHTML;
+                var userInfoArray=userInfo.split("#");
+                var accessUsername=userInfoArray[0].trim();
+                var accessDiscriminator=userInfoArray[1];
+                var roleDeleteRequest={
+                    username: accessUsername,
+                    discriminator: accessDiscriminator
+                }
+                // Confirm the delete
+                var retVal = confirm("Are you sure you want to delete " + accessUsername + " from the lists? ");
+                // If they confirm it, log it and do it
+                if (retVal == true) {
+                    console.log("getting close");
+                    deleteRoleRequest(roleDeleteRequest);
+                }
+                currRunning = false;
+            }
+          });
+    }
+
+    async function deleteRoleRequest(rq){
+        try{
+            let resp = await fetch(`${lemonAPIEndpoint}/lemon/playlists/${selectedPlaylist.id}/removeuser`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': user.token
+                },
+                body: JSON.stringify(rq)
+            });
+            if (resp.status===204){
+                console.log("Deletion Complete");
+                showAccess;
+            }
+            else if (resp.status === 403) {
+                alert("Sorry, you don't have permissions to do that!");
+            }
+        }catch(e){
+            console.error(e);
+            updateErrorMessage('Connection error!');
         }
     }
     // ___________________________________ PLAYLIST LOGIC ______________________________________________
@@ -494,15 +552,16 @@ function DashboardComponent() {
         let editName=editNameField.value;
         let editDescriptionFeild=document.getElementById("edit-playlist-description");
         let editDescription=editDescriptionFeild.value;
-        console.log(selectedPlaylist);
-        console.log(selectedPlaylist.access);
+        let newAccessField = document.querySelector('input[type=checkbox]');
+        let newAccess="PRIVATE";
+        if(newAccessField.checked) newAccess="PUBLIC";
         let newInfo={
             name: editName,
             description: editDescription,
-            access:selectedPlaylist.access
+            access:newAccess
         }
         try {
-            let resp = await fetch(`${lemonAPIEndpoint}/lemon/playlists/${selectedPlaylist.id}/editplaylist`, {
+            let resp = await fetch(`http://localhost:5000/lemon/playlists/${selectedPlaylist.id}/editplaylist`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
@@ -513,6 +572,7 @@ function DashboardComponent() {
             if (resp.status === 200) {
                 console.log("Edit Done");
                 loadPrivate();
+                loadPublic();
                 let songsContainer=document.getElementById('PlaylistTable').getElementsByTagName('tbody')[0];
                 songsContainer.innerHTML=null;
                 //clear playlist name and id displayed above the table
